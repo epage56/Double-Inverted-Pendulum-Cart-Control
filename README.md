@@ -6,7 +6,7 @@
 [![Control](https://img.shields.io/badge/Control-Latest-orange.svg)](https://python-control.readthedocs.io/)
 
 <p align="center">
-  <img src="Double-Inverted-Pendulum-Cart-Control/Media/DIPCdiagram.png" alt="Double Inverted Pendulum Diagram">
+  <img src="Media/DIPCdiagram.png" alt="Double Inverted Pendulum Diagram">
 </p>m
 
 ## Table of Contents

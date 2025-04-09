@@ -31,18 +31,16 @@ This repository contains an implementation of trajectory optimization and optima
 
 ### What is a Double Inverted Pendulum?
 
-A double inverted pendulum cart (DIPC) consists of two pendulums attached in series on a cart. This system is interesting due to:
+The double inverted pendulum cart (DIPC) is a classic example of a chaotic system in physics and is used in academic control theory and robotics to benchmark different control strategies. Control theorists are interested in the system because it is an underactuated system, meaning that it has more degrees of freedom (3, theta1, theta2, and x) than its number of independently controllable actuators (1, u). 
 
-- **Nonlinear**: The kinematics of the system are highly nonlienar and require a large PDE to be solved
-- **Underactuated**: The system has 3 degrees of freedom but only one control input
-- **Unstable at the desired equilibrium**: The upright position is inherently unstable
-
-All of these features make the problem a common way to benchmark different controllers in control theory and robotics.
+There are two common benchmarks of control with this system. The first is keeping the DIPC in the inverted position despite small disturbances while the second type of benchmark involves moving the system from one state to another state. Commonly the states chosen are two different cart positions with the pendulum inverted or swinging the system up from the stable bottom equilibrium to the unstable inverted position. 
 
 <details>
-<summary>Mathematical Model (Click to expand)</summary>
+<summary>Derivation of Dynamics Equations (Click to expand)</summary>
 
-The mathematical model of the double pendulum can be derived using Lagrangian mechanics:
+The equation of motion describing the double inverted pendulum can be derived with lagrangian or newtonian mechanics. Lagrangian mechanics were chosen for this problem because it is more interpretable. For more background on this subject I recommend the text - Modern Robotics: Mechanics, Planning, and Control by Park and Lynch. 
+
+The lagrangian is given as:
 
 $$L = T - V$$
 
@@ -75,11 +73,11 @@ graph TD
 ```
 
 1. **System Modeling**: Derivation of the dynamic equations of motion
-2. **Swing-Up Optimization**: Using Gekko to solve the nonlinear programming problem
-3. **LQR Controller**: Implementation of a Linear Quadratic Regulator for stabilization
+2. **Swing-Up Optimization**: Using Gekko to solve the nonlinear programming problem of optimal swing up
+3. **LQR Controller**: Implementation of a Linear Quadratic Regulator for inverted balencing 
 4. **Simulation Environment**: Visualization and analysis tools
 
-## 🔧 Technical Approach
+## Technical Approach
 
 ### Dynamics Formulation
 
@@ -90,7 +88,7 @@ The mathematical model of the double pendulum cart system is derived using Lagra
 The swing-up problem is formulated as an optimal control problem and solved using Gekko, a Python package for nonlinear optimization. The objective is to find a control input sequence that moves the pendulums from the downward position to the upright position while minimizing a cost function (typically energy or time).
 
 <details>
-<summary>💻 Optimization Problem Example</summary>
+<summary> Nonlinear Optimization Example</summary>
 
 ```python
 # Example of setting up the optimization problem in Gekko
@@ -126,7 +124,7 @@ m.solve()
 ```
 </details>
 
-### Stabilization Control
+### LQR Control
 
 Once near the upright position, a Linear Quadratic Regulator (LQR) takes over to stabilize the system. The LQR design involves:
 - Linearizing the system around the upright equilibrium point
@@ -134,7 +132,7 @@ Once near the upright position, a Linear Quadratic Regulator (LQR) takes over to
 - Solving the Riccati equation to obtain the optimal feedback gain matrix
 
 <details>
-<summary>⚙️ LQR Implementation Example</summary>
+<summary>LQR Implementation Example</summary>
 
 ```python
 # Example of implementing LQR control
@@ -168,7 +166,7 @@ def lqr_control(state):
 ```
 </details>
 
-## 🚀 Installation
+## Installation
 
 ```bash
 # Clone the repository
@@ -183,67 +181,6 @@ source env/bin/activate  # On Windows: env\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 💻 Usage
-
-### Running the Swing-Up Optimization
-
-```bash
-python swing_up_optimization.py
-```
-
-### Simulating the Controlled System
-
-```bash
-python simulate_control.py
-```
-
-### Visualizing Results
-
-```bash
-python visualize_results.py --data_file results/simulation_data.pkl
-```
-
-### Quick Start Guide
-
-```python
-# Minimal working example to run a simulation
-from double_pendulum import DoublePendulumCart
-from controllers import LQRController
-
-# Initialize the system
-system = DoublePendulumCart(m_cart=1.0, m1=0.5, m2=0.5, l1=1, l2=1)
-
-# Load pre-computed swing-up trajectory
-trajectory = load_trajectory("example_data/swing_up.pkl")
-
-# Initialize controller
-controller = LQRController(system, Q, R)
-
-# Run simulation
-results = system.simulate(
-    initial_state=[0, 0, np.pi, 0, np.pi, 0],
-    controller=controller,
-    swing_up_trajectory=trajectory,
-    t_final=10.0
-)
-
-# Plot results
-system.plot_results(results)
-```
-
-## 📊 Results
-
-<p align="center">
-  <img src="/api/placeholder/800/400" alt="Simulation Results">
-</p>
-
-The repository includes example results demonstrating successful swing-up and stabilization of the double pendulum system. Key performance metrics include:
-
-- Swing-up time: ~2.5 seconds
-- Control effort: < 15 N (maximum force)
-- Stabilization accuracy: < 0.05 rad steady-state error
-- Robustness to disturbances: Recovers from impulses up to 2 N⋅s
-
 ## 📦 Dependencies
 
 - Python 3.8+
@@ -253,31 +190,7 @@ The repository includes example results demonstrating successful swing-up and st
 - Matplotlib
 - Control
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👏 Acknowledgments
-
-- This work builds on classical control theory and optimal control principles
-- Special thanks to [relevant papers or resources]
-
-## 📬 Contact
-
-For questions or collaboration opportunities, please open an issue or contact [your email/contact information].
-
----
-
-<p align="center">
-  <i>If this project helps you in your research or work, please star the repository!</i>
-</p>

@@ -6,8 +6,8 @@
 [![Control](https://img.shields.io/badge/Control-Latest-orange.svg)](https://python-control.readthedocs.io/)
 
 <p align="center">
-  <img src="Media/DIPCdiagram.png" alt="Double Inverted Pendulum Diagram">
-</p>m
+  <img src="Media/DIPCdiagram.png" alt="Double Inverted Pendulum Diagram" width = "600">
+</p>
 
 ## Table of Contents
 - [Overview](#-overview)

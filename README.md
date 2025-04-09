@@ -1,7 +1,7 @@
 # Double Inverted Pendulum: Swing-Up and Control 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Gekko](https://img.shields.io/badge/Gekko-Latest-green.svg)](https://gekko.readthedocs.io/)
 [![Control](https://img.shields.io/badge/Control-Latest-orange.svg)](https://python-control.readthedocs.io/)
 
@@ -61,15 +61,41 @@ Where:
 
 </details>
 
-## 🧩 Project Components
+## Project Components
 
 ```mermaid
 graph TD
-    A[System Modeling] --> B[Swing-Up Optimization]
-    B --> C[LQR Controller]
+    subgraph Software & Control
+        A[System Modeling]
+        B[Swing-Up Optimization]
+        C[LQR Controller]
+        D[Simulation Environment]
+        E[Embedded Implementation]
+    end
+
+    subgraph Hardware Development
+        H1[Mechanical Design]
+        H2[Fabrication & Assembly]
+        H3[Sensor Integration]
+        H4[Motor Driver & Electronics]
+        H5[Embedded Hardware Setup]
+    end
+
+    %% Software Flow
+    A --> B
     A --> C
-    C --> D[Simulation Environment]
-    B --> D
+    B --> C
+    C --> D
+    D --> E
+
+    %% Hardware Flow
+    H1 --> H2
+    H2 --> H3
+    H3 --> H4
+    H4 --> H5
+
+    %% Integration
+    E --> H5
 ```
 
 1. **System Modeling**: Derivation of the dynamic equations of motion
@@ -181,9 +207,9 @@ source env/bin/activate  # On Windows: env\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 📦 Dependencies
+## Dependencies
 
-- Python 3.8+
+- Python 3.10+
 - Gekko
 - NumPy
 - SciPy

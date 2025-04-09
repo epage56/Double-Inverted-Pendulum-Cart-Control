@@ -1,7 +1,7 @@
 # Double Inverted Pendulum: Swing-Up and Control 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Gekko](https://img.shields.io/badge/Gekko-Latest-green.svg)](https://gekko.readthedocs.io/)
 [![Control](https://img.shields.io/badge/Control-Latest-orange.svg)](https://python-control.readthedocs.io/)
 
@@ -28,7 +28,7 @@ This repository contains an implementation of trajectory optimization and optima
 
 ### What is a Double Inverted Pendulum?
 
-The double inverted pendulum cart (DIPC) is a classic example of a chaotic system in physics and is used in academic control theory and robotics to benchmark different control strategies. Control theorists are interested in the system because it is an underactuated system, meaning that it has more degrees of freedom (3, theta1, theta2, and x) than its number of independently controllable actuators (1, u). 
+The double inverted pendulum cart (DIPC) is a classic example of a chaotic system in physics and is used in academic control theory and robotics to benchmark different control strategies. Control theorists are interested in the system because it is an underactuated system, meaning that it has more degrees of freedom (3), $\theta_{1}$, $\theta_{2}$, and x, than its number of independently controllable actuators (1), $u$. 
 
 There are two common benchmarks of control with this system. The first is keeping the DIPC in the inverted position despite small disturbances while the second type of benchmark involves moving the system from one state to another state. Commonly the states chosen are two different cart positions with the pendulum inverted or swinging the system up from the stable bottom equilibrium to the unstable inverted position. 
 
@@ -97,7 +97,6 @@ Where:
 - $\tau = [F, 0, 0]^T$ is the generalized force vector with $F$ being the control input
 
 </details>
-
 
 The mathematical model of the double pendulum cart system is derived using Lagrangian mechanics, resulting in coupled differential equations that describe the motion of the system.
 

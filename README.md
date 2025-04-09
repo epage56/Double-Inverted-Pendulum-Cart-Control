@@ -12,20 +12,17 @@
 ## Table of Contents
 - [Overview](#-overview)
 - [Background](#-background)
-- [Project Components](#-project-components)
 - [Technical Approach](#-technical-approach)
-- [Installation](#-installation)
-- [Usage](#-usage)
+- [Tracjectory Optimization](#-technical-approach)
+- [LQR Controller](#-technical-approach)
 - [Results](#-results)
 - [Dependencies](#-dependencies)
-- [Contributing](#-contributing)
 - [License](#-license)
-- [Acknowledgments](#-acknowledgments)
-- [Contact](#-contact)
 
 ## Overview
 
-This repository contains an implementation of trajectory optimization and optimal control theory in python for the double inverted pendulum cart. The project uses nonlinear optimization to find the optimal force input on the system to achieve the swing up of the pendulum and then uses an LQR controller to stay in the inverted position. The project includes an animation and graphs to visualize the dynamics of the pendulum as time evolves. 
+This repository contains an implementation of trajectory optimization and optimal control theory in python for the double inverted pendulum cart. The project uses nonlinear optimization to find the optimal force input on the system to achieve the swing up of the pendulum and then uses an LQR controller to stay in the inverted position. The project includes an animation and graphs to visualize the dynamics of the pendulum as time evolves.  The software and hardware development flows are documented in the graph below
+
 
 ## Background
 
@@ -35,8 +32,48 @@ The double inverted pendulum cart (DIPC) is a classic example of a chaotic syste
 
 There are two common benchmarks of control with this system. The first is keeping the DIPC in the inverted position despite small disturbances while the second type of benchmark involves moving the system from one state to another state. Commonly the states chosen are two different cart positions with the pendulum inverted or swinging the system up from the stable bottom equilibrium to the unstable inverted position. 
 
+
+## Technical Approach
+
+```mermaid
+graph TD
+    subgraph Python Simulation & Control
+        A[Mathematical Model of System]
+        B[Swing-Up Optimization]
+        C[LQR Controller Design]
+        D[Simulation Environment]
+        E[Embedded Implementation]
+    end
+
+    subgraph Hardware Development
+        H1[Mechanical Design]
+        H2[Sensor Speccing / Testing]
+        H3[Motor Speccing / Testing]
+        H4[Precision Measurement of system]
+        H5[Embedded Setup]
+    end
+
+    %% Software Flow
+    A --> B
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+
+    %% Hardware Flow
+    H1 --> H2
+    H2 --> H3
+    H3 --> H4
+    H4 --> H5
+
+    %% Integration
+    E --> H5
+```
+
+### Equation of Motion
+
 <details>
-<summary>Derivation of Dynamics Equations (Click to expand)</summary>
+<summary>More Detailed Derivation (Click to expand)</summary>
 
 The equation of motion describing the double inverted pendulum can be derived with lagrangian or newtonian mechanics. Lagrangian mechanics were chosen for this problem because it is more interpretable. For more background on this subject I recommend the text - Modern Robotics: Mechanics, Planning, and Control by Park and Lynch. 
 
@@ -61,51 +98,6 @@ Where:
 
 </details>
 
-## Project Components
-
-```mermaid
-graph TD
-    subgraph Software & Control
-        A[System Modeling]
-        B[Swing-Up Optimization]
-        C[LQR Controller]
-        D[Simulation Environment]
-        E[Embedded Implementation]
-    end
-
-    subgraph Hardware Development
-        H1[Mechanical Design]
-        H2[Fabrication & Assembly]
-        H3[Sensor Integration]
-        H4[Motor Driver & Electronics]
-        H5[Embedded Hardware Setup]
-    end
-
-    %% Software Flow
-    A --> B
-    A --> C
-    B --> C
-    C --> D
-    D --> E
-
-    %% Hardware Flow
-    H1 --> H2
-    H2 --> H3
-    H3 --> H4
-    H4 --> H5
-
-    %% Integration
-    E --> H5
-```
-
-1. **System Modeling**: Derivation of the dynamic equations of motion
-2. **Swing-Up Optimization**: Using Gekko to solve the nonlinear programming problem of optimal swing up
-3. **LQR Controller**: Implementation of a Linear Quadratic Regulator for inverted balencing 
-4. **Simulation Environment**: Visualization and analysis tools
-
-## Technical Approach
-
-### Dynamics Formulation
 
 The mathematical model of the double pendulum cart system is derived using Lagrangian mechanics, resulting in coupled differential equations that describe the motion of the system.
 
@@ -191,21 +183,6 @@ def lqr_control(state):
     return -np.dot(K, state)
 ```
 </details>
-
-## Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/double-pendulum-control.git
-cd double-pendulum-control
-
-# Create and activate a virtual environment (optional but recommended)
-python -m venv env
-source env/bin/activate  # On Windows: env\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
 
 ## Dependencies
 

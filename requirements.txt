@@ -1,0 +1,6 @@
+simpy
+scipy
+numpy
+matplotlib
+gekko
+control

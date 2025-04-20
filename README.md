@@ -72,18 +72,87 @@ graph TD
 
 ### Equation of Motion
 
-<details>
-<summary>More Detailed Derivation (Click to expand)</summary>
+The equation of motion describing the double inverted pendulum can be derived with lagrangian or newtonian mechanics; however, lagrangian mechanics were selected here for their interpretability. For more background on this subject I recommend the text - Modern Robotics: Mechanics, Planning, and Control by Park and Lynch. 
 
-The equation of motion describing the double inverted pendulum can be derived with lagrangian or newtonian mechanics. Lagrangian mechanics were chosen for this problem because it is more interpretable. For more background on this subject I recommend the text - Modern Robotics: Mechanics, Planning, and Control by Park and Lynch. 
+To best understand the dynamics of the double pendulum it is first important to understand how largrangian mechanics are implemented through the derivation of the equations of motion of the single inverted pendulum.
 
-The lagrangian is given as:
+For the single inverted pendulum on a cart:
 
-$$L = T - V$$
+# INSERT IMAGE HEREEEEE of SIPC #
+
+The Euler-Lagrange Equation is given as:
+
+$$
+\frac{d}{dt} \left( \frac{\partial \mathcal{L}}{\partial \dot{q}} \right) - \frac{\partial \mathcal{L}}{\partial q} = Q
+$$
 
 Where:
+$$\mathcal{L} = T - V$$
 - $T$ is the kinetic energy of the system
 - $V$ is the potential energy of the system
+
+First, lets transform to cartesian coordinates so that the kinetic energy of the pendulum can be found
+
+$$x_m = x +\sin(\theta)$$ 
+$$\dot{x_m}  = \dot{x} + L\dot{\theta}\cos(\theta)$$
+
+and 
+
+$$y_m = L + L\cos(\theta)$$ 
+$$\dot{y_m}  = -L\dot{\theta}\sin(\theta)$$
+
+Now the total kinetic energy of the system can be found as 
+
+$$ T = T_m + T_M = \frac{1}{2} M \dot{x^2} + \frac{1}{2} m(\dot{ x_m^2} + \dot{y_m^2}) $$
+
+and the potential energy of the system can be found as:
+
+$$ V = V_m + V_M = mgy_m $$
+
+Now the Euler-Lagrange equations can be formed for the x direction. It is important to recall that there is friction between the cart and the rail. This fricitonal force can be approximated by a viscous friction and is always in the opposite direction as the force. It is added to the RHS of the eqauation with the input force on the cart, u.
+
+
+$$
+\frac{d}{dt} \left( \frac{\partial \mathcal{L}}{\partial \dot{x}} \right) - \frac{\partial \mathcal{L}}{\partial x} = u + b_M \dot{x}
+$$
+
+where 
+
+$$\mathcal{L} = \frac{1}{2} M \dot{x^2} + \frac{1}{2} m[(\dot{x} + L\dot{\theta}\cos(\theta)^2 + (-L\dot{\theta}\sin(\theta))^2] + mgy_m$$ 
+
+
+$$
+\frac{d}{dt} \left(\frac{\partial \mathcal{L}}{\partial \dot{x}}\right)
+= 
+\ddot{x}(M+m) + mL\ddot{\theta}\cos(\theta)-mL\dot{\theta^2}\sin(\theta)
+$$ 
+
+$$
+\frac{\partial \mathcal{L}}{\partial x} 
+= 
+0
+$$
+
+Similarly, the equation for the theta coordinate can be found as:
+
+$$
+\frac{d}{dt} \left( \frac{\partial \mathcal{L}}{\partial \dot{\theta}} \right) - \frac{\partial \mathcal{L}}{\partial \theta} = b_m \dot{\theta}
+$$
+
+where 
+
+$$
+\frac{d}{dt} \left(\frac{\partial \mathcal{L}}{\partial \dot{\theta}}\right)
+= 
+\ddot{x}(M+m) + mL\ddot{\theta}\cos(\theta)-mL\dot{\theta^2}\sin(\theta)
+$$ 
+
+$$
+\frac{\partial \mathcal{L}}{\partial x} 
+= 
+0
+$$
+
 
 For the double pendulum on a cart, the Lagrangian leads to a set of coupled differential equations:
 

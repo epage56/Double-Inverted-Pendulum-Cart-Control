@@ -49,6 +49,11 @@ class DIPC:
             0.5 * L1 * sym.sin(self.q[1]) + 0.5 * L2 * sym.sin(self.q[1] + self.q[2]),
             self.q[2],
         ])
+        
+        # Viscous friction torques
+        Bc = self.params.Bc
+        B1 = self.params.B1
+        B2 = self.params.B2
 
         # link Jacobians
         J1 = P1.jacobian(self.q)
@@ -71,6 +76,12 @@ class DIPC:
         self.C = C
         self.g = g
         
+        B_vec = sym.Matrix([Bc, B1, B2])
+        dq_vec = sym.Matrix(self.dq)  # convert sympy Array to proper Matrix
+        friction = B_vec.multiply_elementwise(dq_vec)
+        
+        self.friction = friction
+        
         # print(self.g)
 
     def _lambdify_rhs(self):
@@ -80,6 +91,7 @@ class DIPC:
         self.mass_matrix = sym.lambdify([self.q], self.M, modules="numpy")
         self.coriolis_matrix = sym.lambdify([self.q, self.dq], self.C, modules="numpy")
         self.gravity_vector = sym.lambdify([self.q], self.g, modules="numpy")
+        self.friction_vector = sym.lambdify([self.q, self.dq], self.friction, modules="numpy")
     
     def force(self, q, dq, ddq):
         """
@@ -96,8 +108,10 @@ class DIPC:
         M = self.mass_matrix(q)
         C = self.coriolis_matrix(q, dq)
         g = self.gravity_vector(q)
+        friction = self.friction_vector(q, dq)
 
-        return M @ ddq + C @ dq + g
+
+        return M @ ddq + C @ dq + g + friction
 
     def simulate(self, x0, u_func, t_final, dt=0.01): # notice here that the timestep is 0.01 seconds, or 10ms
         """
@@ -112,8 +126,10 @@ class DIPC:
             M = self.mass_matrix(q)
             C = self.coriolis_matrix(q, dq)
             g = self.gravity_vector(q)
+            friction = np.array(self.friction_vector(q, dq)).flatten()
 
-            ddq = np.linalg.solve(M, u - C @ dq - g)
+
+            ddq = np.linalg.solve(M, u - C @ dq - g - friction)
             return np.concatenate([dq, ddq])
 
         t_eval = np.arange(0, t_final + dt, dt)

@@ -71,7 +71,7 @@ class DIPC:
         self.C = C
         self.g = g
         
-        print(self.g)
+        # print(self.g)
 
     def _lambdify_rhs(self):
         """
@@ -126,6 +126,43 @@ class DIPC:
 
     def linearize(self, x_eq, u_eq):
         """
-        Linearize the system at the given equilibrium point.
+        Linearize the nonlinear dynamics around an equilibrium (x_eq, u_eq).
+        Returns linear system matrices A, B such that dx/dt ≈ A(x - x_eq) + B(u - u_eq)
         """
-        pass  # TODO: implement
+        
+        # 1) create plain symbols for states & inputs
+        q1, q2, q3   = sym.symbols('q1 q2 q3')
+        dq1, dq2, dq3 = sym.symbols('dq1 dq2 dq3')
+        u1, u2, u3   = sym.symbols('u1 u2 u3')
+
+        x_syms = sym.Matrix([q1, q2, q3, dq1, dq2, dq3])
+        u_syms = sym.Matrix([u1, u2, u3])
+
+        # 2) convert your M, C, g into Matrix form and substitute Function(t) → symbol
+        subs_map = {
+        self.q[0]: q1,   self.q[1]: q2,   self.q[2]: q3,
+        self.dq[0]: dq1, self.dq[1]: dq2, self.dq[2]: dq3
+        }
+        M_mat = sym.Matrix(self.M).subs(subs_map)
+        C_mat = sym.Matrix(self.C).subs(subs_map)
+        g_vec = sym.Matrix(self.g).subs(subs_map)
+
+        # 3) build your right‑hand side f = [dq; ddq]
+        ddq = M_mat.inv() * (u_syms - C_mat * sym.Matrix([dq1, dq2, dq3]) - g_vec)
+        f_sym = sym.Matrix.vstack(sym.Matrix([dq1, dq2, dq3]), ddq)
+
+        # 4) Jacobians
+        A_sym = f_sym.jacobian(x_syms)
+        B_sym = f_sym.jacobian(u_syms)
+
+        # 5) plug in your equilibrium values
+        subs_eq = {
+        q1: x_eq[0],  q2: x_eq[1],  q3: x_eq[2],
+        dq1: x_eq[3], dq2: x_eq[4], dq3: x_eq[5],
+        u1: u_eq[0],  u2: u_eq[1],  u3: u_eq[2]
+        }
+        A = np.array(A_sym.evalf(subs=subs_eq), dtype=float)
+        B = np.array(B_sym.evalf(subs=subs_eq), dtype=float)
+
+        self.A, self.B = A, B
+        return A, B

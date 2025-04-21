@@ -16,12 +16,12 @@ class DIPCParams:
     L2: float = 0.5
     
     # Coefficients of friciion:
-    Bc: float = 0.3
-    B1: float = 0.02
-    B2: float = 0.02
+    Bc: float = 0.2
+    B1: float = 0.05
+    B2: float = 0.05
     
     # Gravity
-    g: float = 9.8
+    g: float = 9.81
 
     # Moments of inertia (computed from mass and length)
     @property

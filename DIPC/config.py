@@ -12,7 +12,7 @@ class DIPCParams:
     M2: float = 1.0
 
     # Pendulum lengths
-    L1: float = 1.0
+    L1: float = 0.5
     L2: float = 0.5
     
     # Coefficients of friciion:

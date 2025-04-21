@@ -30,7 +30,7 @@ class DIPC:
         M1 = self.params.M1
         M2 = self.params.M2
         L1 = self.params.L1
-        L2 = self.params.L1 
+        L2 = self.params.L2
         G = self.params.g
         G1 = self.params.G1
         G2 = self.params.G2
@@ -71,6 +71,8 @@ class DIPC:
         self.C = C
         self.g = g
         
+        print(self.g)
+
     def _lambdify_rhs(self):
         """
         Lambdify symbolic functions to numerical ones for fast evaluation.
@@ -97,7 +99,7 @@ class DIPC:
 
         return M @ ddq + C @ dq + g
 
-    def simulate(self, x0, u_func, t_final, dt=0.01):
+    def simulate(self, x0, u_func, t_final, dt=0.01): # notice here that the timestep is 0.01 seconds, or 10ms
         """
         Simulate the system using forward integration.
         """

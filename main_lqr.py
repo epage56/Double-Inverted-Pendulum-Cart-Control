@@ -21,7 +21,7 @@ def main():
     A, B = model.linearize(x_eq, u_eq)
 
     # 4) Keep only the cart‑force channel (underactuated)
-    #    B is 6×3; column 0 is the cart
+    #    B is 6×3; column 0 is the cartb
     B_cart = B[:, [0]]    # shape (6,1)
 
     # 5) Choose LQR weights

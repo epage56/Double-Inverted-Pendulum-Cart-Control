@@ -116,9 +116,12 @@ $$
 where 
 
 $$
-\mathcal{L} = \frac{1}{2} M \dot{x^2} + \frac{1}{2} m[(\dot{x} + L\dot{\theta}\cos(\theta)^2 + (-L\dot{\theta}\sin(\theta))^2] + mgy_m
-$$ 
-
+\mathcal{L}
+  = \tfrac12\,M\,\dot x^2
+  + \tfrac12\,m\Bigl[(\dot x + L\,\dot\theta\cos\theta)^2
+                  + (L\,\dot\theta\sin\theta)^2\Bigr]
+  + m\,g\,y_m.
+$$
 
 $$
 \frac{d}{dt} \left(\frac{\partial \mathcal{L}}{\partial \dot{x}}\right)

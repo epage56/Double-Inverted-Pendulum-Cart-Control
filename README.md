@@ -180,7 +180,7 @@ An interesting fact about the double pendulum system is that it acts like a sing
 ## Dependencies
 
 - Python 3.10+
-- Gekko
+- CasADi
 - NumPy
 - SciPy
 - Matplotlib

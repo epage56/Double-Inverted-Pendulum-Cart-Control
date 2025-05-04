@@ -115,7 +115,9 @@ $$
 
 where 
 
-$$\mathcal{L} = \frac{1}{2} M \dot{x^2} + \frac{1}{2} m[(\dot{x} + L\dot{\theta}\cos(\theta)^2 + (-L\dot{\theta}\sin(\theta))^2] + mgy_m$$ 
+$$
+\mathcal{L} = \frac{1}{2} M \dot{x^2} + \frac{1}{2} m[(\dot{x} + L\dot{\theta}\cos(\theta)^2 + (-L\dot{\theta}\sin(\theta))^2] + mgy_m
+$$ 
 
 
 $$

@@ -6,7 +6,7 @@
 [![Control](https://img.shields.io/badge/Control-Latest-orange.svg)](https://python-control.readthedocs.io/)
 
 <p align="center">
-  <img src="Media/DIPCdiagram.png" alt="Double Inverted Pendulum Diagram" width = "600">
+  <img src="Media/DIPC_diagram.png" alt="Double Inverted Pendulum Diagram" width = "500">
 </p>
 
 ## Table of Contents
@@ -21,17 +21,14 @@
 
 ## Overview
 
-This repository contains an implementation of trajectory optimization and optimal control theory in python for the double inverted pendulum cart. The project uses nonlinear optimization to find the optimal force input on the system to achieve the swing up of the pendulum and then uses an LQR controller to stay in the inverted position. The project includes an animation and graphs to visualize the dynamics of the pendulum as time evolves.  The software and hardware development flows are documented in the graph below
+This repository contains a simulation of the double inveted pendulum cart system. Nonlinear programming is used to find the  optimal trajectory between two system states with a smooth force input while balencing the system in the inverted position is accomplished by constructing an linear quadratic regulator to optimally place the poles of the system. The project includes an plotting helper functions and an interactive plot with togglable controls for the user to give the system preturbations and see how it responds. The intent of this project is to use python to simulate the system in lieu of matlab or simulink so that a real system can be swung up and balenced. 
 
 
 ## Background
 
 ### What is a Double Inverted Pendulum?
 
-The double inverted pendulum cart (DIPC) is a classic example of a chaotic system in physics and is used in academic control theory and robotics to benchmark different control strategies. Control theorists are interested in the system because it is an underactuated system, meaning that it has more degrees of freedom (3), $\theta_{1}$, $\theta_{2}$, and x, than its number of independently controllable actuators (1), $u$. 
-
-There are two common benchmarks of control with this system. The first is keeping the DIPC in the inverted position despite small disturbances while the second type of benchmark involves moving the system from one state to another state. Commonly the states chosen are two different cart positions with the pendulum inverted or swinging the system up from the stable bottom equilibrium to the unstable inverted position. 
-
+The double inverted pendulum cart (DIPC) is a classic example of a chaotic system in physics and is used in control theory and robotics to benchmark different control strategies. Control theorists are interested in the system because it is an underactuated system, meaning that it has more degrees of freedom (3), $\theta_{1}$, $\theta_{2}$, and x, than its number of independently controllable actuators (1), $u$. 
 
 ## Technical Approach
 
@@ -72,15 +69,15 @@ graph TD
 
 ### Equation of Motion
 
-The equation of motion describing the double inverted pendulum can be derived with lagrangian or newtonian mechanics; however, lagrangian mechanics were selected here for their interpretability. For more background on this subject I recommend the text - Modern Robotics: Mechanics, Planning, and Control by Park and Lynch. 
+The equation of motion describing the double inverted pendulum can be derived with lagrangian or newtonian mechanics; however, lagrangian mechanics were selected throughout this project because of their interpretability. For more background on this subject I recommend the text - Modern Robotics: Mechanics, Planning, and Control by Park and Lynch. 
 
 To best understand the dynamics of the double pendulum it is first important to understand how largrangian mechanics are implemented through the derivation of the equations of motion of the single inverted pendulum.
 
-For the single inverted pendulum on a cart:
+<p align="center">
+  <img src="Media/SIPC_diagram.png" alt="Double Inverted Pendulum Diagram" width = "400">
+</p>
 
-# INSERT IMAGE HEREEEEE of SIPC #
-
-The Euler-Lagrange Equation is given as:
+For the single inverted pendulum on a cart the Euler-Lagrange equation is given as:
 
 $$
 \frac{d}{dt} \left( \frac{\partial \mathcal{L}}{\partial \dot{q}} \right) - \frac{\partial \mathcal{L}}{\partial q} = Q
@@ -154,7 +151,7 @@ $$
 $$
 
 
-For the double pendulum on a cart, the Lagrangian leads to a set of coupled differential equations:
+For the double pendulum cart system this approach and some additional algebriaic manupulation yeilds:
 
 $$M(q)\ddot{q} + C(q,\dot{q})\dot{q} + G(q) = \tau$$
 
@@ -165,91 +162,26 @@ Where:
 - $G(q)$ represents gravitational forces
 - $\tau = [F, 0, 0]^T$ is the generalized force vector with $F$ being the control input
 
-</details>
 
-The mathematical model of the double pendulum cart system is derived using Lagrangian mechanics, resulting in coupled differential equations that describe the motion of the system.
+### Swing-Up Strategy (FINISH THIS)
 
-### Swing-Up Strategy
-
-The swing-up problem is formulated as an optimal control problem and solved using Gekko, a Python package for nonlinear optimization. The objective is to find a control input sequence that moves the pendulums from the downward position to the upright position while minimizing a cost function (typically energy or time).
+The swing-up problem is formulated as an trajectory planning problem and solved using CasADI, a Python package that has an existing framework for nonlinear optimization problems and allows easy use of the IPOPT solver. The objective of the problem is to find a control input sequence that moves the pendulums from one state to another while minimizing a cost function (typically energy or time) subject to the physical constraints via the equation of motion of the system. 
 
 <details>
 <summary> Nonlinear Optimization Example</summary>
 
-```python
-# Example of setting up the optimization problem in Gekko
-from gekko import GEKKO
-
-# Initialize Gekko model
-m = GEKKO()
-
-# Time steps
-n = 100
-m.time = np.linspace(0, 5, n)
-
-# Variables
-x = m.Var(value=0)     # Cart position
-theta1 = m.Var(value=np.pi)  # First pendulum angle (starting downward)
-theta2 = m.Var(value=np.pi)  # Second pendulum angle (starting downward)
-
-# Control input
-u = m.MV(value=0, lb=-10, ub=10)  # Force on cart
-u.STATUS = 1  # Allow optimizer to change this value
-
-# Dynamics (simplified example)
-m.Equation(x.dt() == ...)
-m.Equation(theta1.dt() == ...)
-m.Equation(theta2.dt() == ...)
-
-# Objective function: Minimize time to upright position + control effort
-m.Obj(sum((theta1-0)**2 + (theta2-0)**2 + 0.1*u**2))
-
-# Solve
-m.options.IMODE = 6  # Dynamic optimization
-m.solve()
-```
 </details>
 
 ### LQR Control
 
-Once near the upright position, a Linear Quadratic Regulator (LQR) takes over to stabilize the system. The LQR design involves:
-- Linearizing the system around the upright equilibrium point
-- Selecting appropriate state and control weight matrices (Q and R)
-- Solving the Riccati equation to obtain the optimal feedback gain matrix
+An interesting fact about the double pendulum system is that it acts like a single pendulum when the swing amplitude is small. This means that the system can be linearized the inverted or downward equilibria positions approximate the sysem dynamics with less complexity. Near the inverted position a Linear Quadratic Regulator (LQR) is used to stabilize the system. The LQR controller design involves three main steps:
+
+- Linearization of the system about the "inverted" equilibrium point
+- Selection of appropriate state and control weight matrices (Q and R)
+- Solving the Riccati equation to obtain the optimal feedback gain matrix.
 
 <details>
 <summary>LQR Implementation Example</summary>
-
-```python
-# Example of implementing LQR control
-import numpy as np
-import control as ctrl
-
-# Linearized system at the upright equilibrium point
-# State vector: [x, x_dot, theta1, theta1_dot, theta2, theta2_dot]
-A = np.array([
-    [0, 1, 0, 0, 0, 0],
-    [0, 0, a1, 0, a2, 0],
-    [0, 0, 0, 1, 0, 0],
-    [0, 0, a3, 0, a4, 0],
-    [0, 0, 0, 0, 0, 1],
-    [0, 0, a5, 0, a6, 0]
-])
-
-# Input matrix
-B = np.array([[0], [b1], [0], [b2], [0], [b3]])
-
-# LQR weight matrices
-Q = np.diag([1, 1, 10, 1, 10, 1])  # State cost
-R = np.array([[0.1]])              # Control cost
-
-# Solve the Riccati equation to get the optimal gain matrix K
-K, S, E = ctrl.lqr(A, B, Q, R)
-
-# Control law: u = -K*x
-def lqr_control(state):
-    return -np.dot(K, state)
-```
 </details>
 
 ## Dependencies

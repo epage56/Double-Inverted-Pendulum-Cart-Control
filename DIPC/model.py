@@ -1,184 +1,139 @@
-import sympy as sym
 import numpy as np
+import casadi as ca
+from DIPC.config import DIPCParams
 from scipy.integrate import solve_ivp
 
 class DIPC:
-    def __init__(self, params):
-        """
-        Initialize the system with the given parameters.
-        """
+    def __init__(self, params: DIPCParams):
         self.params = params
-        self._define_symbols()
-        self._derive_eom()
-        self._lambdify_rhs()
+        self._build_symbolic_dynamics()
+
+    def _build_symbolic_dynamics(self):
         
-    def _define_symbols(self):
-        """
-        Define symbolic variables for generalized coordinates and inputs.
-        """
-        self.t = sym.symbols("t")
-        self.q = sym.Array(
-            [sym.Function("x1")(self.t), sym.Function("θ2")(self.t), sym.Function("θ3")(self.t)]
-            )
-        self.dq = self.q.diff(self.t)
-    
-    def _derive_eom(self):
-        """
-        Derive equations of motion using the Lagrangian method.
-        """
-        Mc = self.params.Mc
-        M1 = self.params.M1
-        M2 = self.params.M2
-        L1 = self.params.L1
-        L2 = self.params.L2
-        G = self.params.g
-        G1 = self.params.G1
-        G2 = self.params.G2
-        G3 = self.params.G3
+        # use the casadi sx symbol obj to define all the symbols used in the dynamics
+        q1, q2, q3 = ca.SX.sym('q1'), ca.SX.sym('q2'), ca.SX.sym('q3')
+        dq1, dq2, dq3 = ca.SX.sym('dq1'), ca.SX.sym('dq2'), ca.SX.sym('dq3')
+        u1 = ca.SX.sym('u1')
+
+        # make 'em vectors for all the matrix math
+        q  = ca.vertcat(q1, q2, q3)
+        dq = ca.vertcat(dq1, dq2, dq3)
+        x  = ca.vertcat(q, dq)
+        u  = ca.vertcat(u1)
+
+        # calling params to get all the physical parameters.
         
-        
-          # link poses
-        P1 = sym.Matrix([self.q[0], 0, 0])
-        P2 = P1 + sym.Matrix([
-            0.5 * L1 * sym.cos(self.q[1]),
-            0.5 * L1 * sym.sin(self.q[1]),
-            self.q[1],
-        ])
-        P3 = P2 + sym.Matrix([
-            0.5 * L1 * sym.cos(self.q[1]) + 0.5 * L2 * sym.cos(self.q[1] + self.q[2]),
-            0.5 * L1 * sym.sin(self.q[1]) + 0.5 * L2 * sym.sin(self.q[1] + self.q[2]),
-            self.q[2],
-        ])
-        
-        # Viscous friction torques
-        Bc = self.params.Bc
-        B1 = self.params.B1
-        B2 = self.params.B2
+        P = self.params
+        Mc, M1, M2 = P.Mc, P.M1, P.M2
+        L1, L2     = P.L1, P.L2
+        g          = P.g
+        Bc, B1, B2 = P.Bc, P.B1, P.B2
+        I1, I2     = P.I1, P.I2
 
-        # link Jacobians
-        J1 = P1.jacobian(self.q)
-        J2 = P2.jacobian(self.q)
-        J3 = P3.jacobian(self.q)
+        # define inertia vectoprs
+        G1 = ca.diag(ca.vertcat(Mc, Mc, 0))
+        G2 = ca.diag(ca.vertcat(M1, M1, I1))
+        G3 = ca.diag(ca.vertcat(M2, M2, I2))
 
-        # mass matrix
-        M = J1.transpose() * G1 * J1 + J2.transpose() * G2 * J2 + J3.transpose() * G3 * J3
+        # getting the position of the center of mass of each body 
+        P1 = ca.vertcat(q1, 0, 0)
+        P2 = P1 + ca.vertcat(0.5*L1*ca.cos(q2), 0.5*L1*ca.sin(q2), q2)
+        P3 = P2 + ca.vertcat(
+            0.5*L1*ca.cos(q2) + 0.5*L2*ca.cos(q2+q3),
+            0.5*L1*ca.sin(q2) + 0.5*L2*ca.sin(q2+q3),
+            q3
+        )
 
-        # Christoffel symbols and Coriolis matrix
-        dMdq = M.diff(self.q)
-        Γ = sym.permutedims(dMdq, (2, 1, 0)) - 0.5 * dMdq
-        C = sym.tensorcontraction(sym.tensorproduct(self.dq, Γ), (0, 2)).tomatrix()
+        # Computing the jacobian of those positions to make the mass matrix and 
+        J1 = ca.jacobian(P1, q)
+        J2 = ca.jacobian(P2, q)
+        J3 = ca.jacobian(P3, q)
 
-        # gravity vector
-        V = G * (Mc * P1[1] + M1 * P2[1] + M2 * P3[1])
-        g = V.diff(self.q)
-        
-        self.M = M
-        self.C = C
-        self.g = g
-        
-        B_vec = sym.Matrix([Bc, B1, B2])
-        dq_vec = sym.Matrix(self.dq)  # convert sympy Array to proper Matrix
-        friction = B_vec.multiply_elementwise(dq_vec)
-        
-        self.friction = friction
-        
-        # print(self.g)
+        # assemble the mass or inertia matrix, M
+        M_mat = J1.T @ G1 @ J1 + J2.T @ G2 @ J2 + J3.T @ G3 @ J3
 
-    def _lambdify_rhs(self):
+        # This is disgusting, assembling the corilis matrix by christoffel symbols
+        C_mat = ca.SX.zeros(3, 3)
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    # partial derivatives via jacobian
+                    dMij = ca.jacobian(ca.vertcat(M_mat[i, j]), q)
+                    dMik = ca.jacobian(ca.vertcat(M_mat[i, k]), q)
+                    dMjk = ca.jacobian(ca.vertcat(M_mat[j, k]), q)
+                    dMij_dqk = dMij[0, k]
+                    dMik_dqj = dMik[0, j]
+                    dMjk_dqi = dMjk[0, i]
+                    Gamma = 0.5 * (dMij_dqk + dMik_dqj - dMjk_dqi)
+                    C_mat[i, j] += Gamma * dq[k]
+
+        # define the gravity vector
+        V = g * (Mc*P1[1] + M1*P2[1] + M2*P3[1])
+        g_vec = ca.gradient(V, q)
+
+        # defining friction at the joints with viscous friction model
+        friction = ca.vertcat(Bc*dq1, B1*dq2, B2*dq3)
+
+        # finally, construct the dynamics and solve them
+        tau = ca.vertcat(u1, 0, 0)
+        ddq = ca.solve(M_mat, tau - C_mat@dq - g_vec - friction)
+
+        # here is xdot
+        xdot = ca.vertcat(dq, ddq)
+
+        # make f an actual casadi function
+        self.f = ca.Function('f', [x, u], [xdot], ['x','u'], ['xdot'])
+
+    def simulate(self, x0, u_func, t_final, dt=0.01):
         """
-        Lambdify symbolic functions to numerical ones for fast evaluation.
+        Solves the dynamics equations with rk4 integrator forward
+        
+        INPUTS:
+            x0: initial state vector
+            u_func: control input force; function(state, t) -> length-1 array
         """
-        self.mass_matrix = sym.lambdify([self.q], self.M, modules="numpy")
-        self.coriolis_matrix = sym.lambdify([self.q, self.dq], self.C, modules="numpy")
-        self.gravity_vector = sym.lambdify([self.q], self.g, modules="numpy")
-        self.friction_vector = sym.lambdify([self.q, self.dq], self.friction, modules="numpy")
-    
-    def force(self, q, dq, ddq):
-        """
-        Compute the generalized forces given state and acceleration.
+        
+        # make an ode function to be solved with solve_ivp from scipy integrate
+        def ode(t, y):
+            u = u_func(y, t)
+            dx = np.array(self.f(y, u)).flatten()
+            return dx
 
-        Parameters:
-            q: configuration vector (shape [3])
-            dq: velocity vector (shape [3])
-            ddq: acceleration vector (shape [3])
-
-        Returns:
-            tau: generalized forces (shape [3])
-        """
-        M = self.mass_matrix(q)
-        C = self.coriolis_matrix(q, dq)
-        g = self.gravity_vector(q)
-        friction = self.friction_vector(q, dq)
-
-
-        return M @ ddq + C @ dq + g + friction
-
-    def simulate(self, x0, u_func, t_final, dt=0.01): # notice here that the timestep is 0.01 seconds, or 10ms
-        """
-        Simulate the system using forward integration.
-        """
-        def ode(t, state):
-            q = state[0:3]
-            dq = state[3:6]
-
-            # Here you compute ddq from M, C, g, and u
-            u = u_func(state, t)
-            M = self.mass_matrix(q)
-            C = self.coriolis_matrix(q, dq)
-            g = self.gravity_vector(q)
-            friction = np.array(self.friction_vector(q, dq)).flatten()
-
-
-            ddq = np.linalg.solve(M, u - C @ dq - g - friction)
-            return np.concatenate([dq, ddq])
-
+        # make time array 
         t_eval = np.arange(0, t_final + dt, dt)
-        sol = solve_ivp(ode, (0, t_final), x0, t_eval=t_eval, method='RK45')
+        # solve the initial value problem and allow it to evolve forward in time forever 
+        sol = solve_ivp(ode, [0, t_final], x0, t_eval=t_eval, method='RK45')
 
-        if not sol.success:
-            raise RuntimeError("Simulation failed")
-
+        # return the solution time array and states 
         return sol.t, sol.y.T
 
     def linearize(self, x_eq, u_eq):
         """
-        Linearize the nonlinear dynamics around an equilibrium (x_eq, u_eq).
-        Returns linear system matrices A, B such that dx/dt ≈ A(x - x_eq) + B(u - u_eq)
+        Linearize the dynamics around the inverted equilia
+        
+        INPUTS:
+            x_eq: the equilibria position to be linearized about
+            u_eq: the equilibria control input to be linearized about
+            
+        OUTPUTS:
+            A:  state matrix of the linearized system
+            B:  input matrix of the linearized system
         """
         
-        # 1) create plain symbols for states & inputs
-        q1, q2, q3   = sym.symbols('q1 q2 q3')
-        dq1, dq2, dq3 = sym.symbols('dq1 dq2 dq3')
-        u1, u2, u3   = sym.symbols('u1 u2 u3')
-
-        x_syms = sym.Matrix([q1, q2, q3, dq1, dq2, dq3])
-        u_syms = sym.Matrix([u1, u2, u3])
-
-        # 2) convert your M, C, g into Matrix form and substitute Function(t) → symbol
-        subs_map = {
-        self.q[0]: q1,   self.q[1]: q2,   self.q[2]: q3,
-        self.dq[0]: dq1, self.dq[1]: dq2, self.dq[2]: dq3
-        }
-        M_mat = sym.Matrix(self.M).subs(subs_map)
-        C_mat = sym.Matrix(self.C).subs(subs_map)
-        g_vec = sym.Matrix(self.g).subs(subs_map)
-
-        # 3) build your right‑hand side f = [dq; ddq]
-        ddq = M_mat.inv() * (u_syms - C_mat * sym.Matrix([dq1, dq2, dq3]) - g_vec)
-        f_sym = sym.Matrix.vstack(sym.Matrix([dq1, dq2, dq3]), ddq)
-
-        # 4) Jacobians
-        A_sym = f_sym.jacobian(x_syms)
-        B_sym = f_sym.jacobian(u_syms)
-
-        # 5) plug in your equilibrium values
-        subs_eq = {
-        q1: x_eq[0],  q2: x_eq[1],  q3: x_eq[2],
-        dq1: x_eq[3], dq2: x_eq[4], dq3: x_eq[5],
-        u1: u_eq[0],  u2: u_eq[1],  u3: u_eq[2]
-        }
-        A = np.array(A_sym.evalf(subs=subs_eq), dtype=float)
-        B = np.array(B_sym.evalf(subs=subs_eq), dtype=float)
-
+        x_sym = ca.SX.sym('x', 6) # make a state vector in symbolic form
+        u_sym = ca.SX.sym('u', 1) # make the input vector 
+        
+        f_sym = self.f(x_sym, u_sym) # eval the dynamics function
+        
+        # computes the jacobians to construct the A and B matrices for linearization
+        A_sym = ca.jacobian(f_sym, x_sym)
+        B_sym = ca.jacobian(f_sym, u_sym)
+        
+        # make them callable functions with the casadi lib, evals them
+        # retunrs ndarrays (6x6 and 6x1)
+        A = ca.Function('A', [x_sym, u_sym], [A_sym])(x_eq, u_eq).full()
+        B = ca.Function('B', [x_sym, u_sym], [B_sym])(x_eq, u_eq).full()
+        
+        # store them for later use
         self.A, self.B = A, B
         return A, B

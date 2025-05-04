@@ -2,5 +2,5 @@ simpy
 scipy
 numpy
 matplotlib
-gekko
+casadi
 control

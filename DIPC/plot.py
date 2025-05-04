@@ -1,21 +1,28 @@
-
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+from matplotlib.animation import FuncAnimation
 import numpy as np
 
 def plot_states(t, x_traj):
     """
-    Plot each state variable over time.
+    Plot each state variable over time positions, velocities etc.
     
-    Parameters:
+    INPUTS:
         t: time vector
-        x_traj: state trajectory, shape [len(t), 6]
+        x_traj: state vector over time, describing 
+                evolution of system - shape [len(t), 6]
+    OUPUTS:
+        one figure of all states over time
     """
-    labels = ["x (cart position)", "θ1", "θ2", "dx", "dθ1", "dθ2"]
     
+    # make some labels to make the plots readable (remmebr this x is not the state space x)
+    labels = ["x (cart pos.)", "θ1", "θ2", "dx", "dθ1", "dθ2"]
+    
+    # make the fig, make 6 total plots
     fig, axs = plt.subplots(3, 2, figsize=(12, 8))
     axs = axs.flatten()
-
+    
+    # plot everything we have in the trajectory array
+    # x units are always time
     for i in range(6):
         axs[i].plot(t, x_traj[:, i])
         axs[i].set_title(labels[i])
@@ -28,78 +35,123 @@ def plot_states(t, x_traj):
 
 def plot_control(t, u_traj):
     """
-    Plot control inputs over time.
+    Plots the control input over time to be able to see the if the control input is 
+    feasible or not. 
     
-    Parameters:
+    INPUTS:
         t: time vector
-        u_traj: control inputs, shape [len(t), 1] or [len(t), num_controls]
+        u_traj: control input value over time, describing 
+                evolution of system
     """
-    u_traj = u_traj if u_traj.ndim > 1 else u_traj[:, np.newaxis]
-    num_controls = u_traj.shape[1]
+    # make sure that the control input, u_traj is shaped (N, m) evejn if started as 2d or 1d
+    if u_traj.ndim == 1:
+        u_arr = u_traj[:, None]
+    else:
+        u_arr = u_traj
 
-    plt.figure(figsize=(10, 4))
-    for i in range(num_controls):
-        plt.plot(t, u_traj[:, i], label=f"u{i+1}")
-    
-    plt.title("Control Inputs")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Input Force / Torque")
-    plt.grid(True)
-    plt.legend()
+    # make a figure/axes
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    # Plot each column as u1, u2, u3. friction works on u2, u3
+    for idx in range(u_arr.shape[1]):
+        ax.plot(t, u_arr[:, idx], label=f'u{idx+1}')
+
+    # Labeling + grid
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Force')
+    ax.legend()
+    ax.grid(True)
+
     plt.tight_layout()
     plt.show()
+    
+def animate_dipc(x_traj, t=None, L1=0.5, L2=0.5):
+    """
+    Animate a double inverted pendulum on a cart in 2D.
 
-def animate(x_traj, t=None):
-    # unpack states
-    x   = x_traj[:, 0]   # cart horizontal position
-    θ2  = x_traj[:, 1]   # first link angle (0 = horizontal right)
-    θ3  = x_traj[:, 2]   # second link relative angle
+    INPIUTS:
 
-    L1 = 0.5
-    L2 = 0.5
+        x_traj : State trajectory over N frames, ndarray: 
+            cols:
+                0: cart position
+                1: first pendulum angle
+                2: second pendulum angle
+                3–5: velocities
+                
+        t : time vector, used to align fps of animate with sim fps so it animates in "real-time"
+        L1: float, length of first link
+        L2: float, length of the second link.
 
+
+    OUTPUTS:
+        ani: animated plot
+    """
+
+    x    = x_traj[:, 0]  # cart positions
+    theta1 = x_traj[:, 1]  # link1 absolute angle
+    theta2 = x_traj[:, 2]  # link2 relative angle
+
+    # selkecting the playback speed
+    if t is None:
+        interval = 10  # ms / frame
+    else:
+        dt = np.diff(t)
+        interval = float(dt.mean() * 1000)  # convert to ms = *1000
+
+    # make fig and axes
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.set_xlim(-2,  2)
+    ax.set_xlim(-2, 2)
     ax.set_ylim(-1.5, 1.5)
-    ax.set_aspect("equal")
-    ax.set_xlabel("x (m)")
-    ax.set_ylabel("y (m)")
+    ax.set_aspect('equal')  # make sure that no distortion occurs
 
-    cart_line,  = ax.plot([], [], 'k',  lw=6)
-    link1_line, = ax.plot([], [], 'r-', lw=2)
-    link2_line, = ax.plot([], [], 'b-', lw=2)
+    # init the obj on the plot (cart as line, links as colored lines) 
+    
+    cart_line, = ax.plot([], [], color='k', linewidth=8)
+    link1_line, = ax.plot([], [], color='r', linewidth=2)
+    link2_line, = ax.plot([], [], color='b', linewidth=2)
 
-    def update(i):
-        cx = x[i]
+    # define a function to update the frames of the plot with the new positions
+    def update(frame_idx):
+        # Current cart x-position
+        cx = x[frame_idx]
+        base_pt = np.array([cx, 0.0])
 
-        # base of pendulum (cart axle)
-        base = np.array([cx, 0.0])
-
-        # world‑frame COM of link1
-        p1 = base + np.array([
-            L1 * np.cos(θ2[i]),
-            L1 * np.sin(θ2[i])
+        # forward kinematics: get each joint position
+        
+        joint1 = base_pt + np.array([
+            L1 * np.cos(theta1[frame_idx]),
+            L1 * np.sin(theta1[frame_idx])
+        ])
+        
+        joint2 = joint1 + np.array([
+            L2 * np.cos(theta1[frame_idx] + theta2[frame_idx]),
+            L2 * np.sin(theta1[frame_idx] + theta2[frame_idx])
         ])
 
-        # world‑frame COM of link2
-        p2 = p1 + np.array([
-            L2 * np.cos(θ2[i] + θ3[i]),
-            L2 * np.sin(θ2[i] + θ3[i])
-        ])
+        # make the cart a short line
+        cart_line.set_data([cx - 0.1, cx + 0.1], [0.0, 0.0])
+        
+        # Draw pendulum 1 from the cart to the first point
+        link1_line.set_data([base_pt[0], joint1[0]],
+                            [base_pt[1], joint1[1]])
+        
+        # Draw pendulum 2 from the end of the first pendulum to the second one
+        link2_line.set_data([joint1[0], joint2[0]],
+                            [joint1[1], joint2[1]])
 
-        # draw the little “cart”
-        cart_line.set_data([cx - .2, cx + .2], [0, 0])
-
-        # draw each link
-        link1_line.set_data([base[0], p1[0]], [base[1], p1[1]])
-        link2_line.set_data([p1[0],  p2[0]], [p1[1],  p2[1]])
-
+        # return each frame drawn
         return cart_line, link1_line, link2_line
 
-    ani = animation.FuncAnimation(
-        fig, update,
+    # basically put the animation together.
+    ani = FuncAnimation(
+        fig,
+        update,
         frames=len(x),
-        interval=10,
+        interval=interval,
         blit=True
     )
+    # plot it
     plt.show()
+
+    # return it
+    return ani

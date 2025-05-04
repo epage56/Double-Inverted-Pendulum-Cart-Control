@@ -151,7 +151,7 @@ $$
 $$
 
 
-For the double pendulum cart system this approach and some additional algebriaic manupulation yeilds:
+For the double pendulum cart system, this approach and some additional algebriaic manupulation yeilds:
 
 $$M(q)\ddot{q} + C(q,\dot{q})\dot{q} + G(q) = \tau$$
 
@@ -163,14 +163,10 @@ Where:
 - $\tau = [F, 0, 0]^T$ is the generalized force vector with $F$ being the control input
 
 
-### Swing-Up Strategy (FINISH THIS)
+### Swing-Up Strategy
 
 The swing-up problem is formulated as an trajectory planning problem and solved using CasADI, a Python package that has an existing framework for nonlinear optimization problems and allows easy use of the IPOPT solver. The objective of the problem is to find a control input sequence that moves the pendulums from one state to another while minimizing a cost function (typically energy or time) subject to the physical constraints via the equation of motion of the system. 
 
-<details>
-<summary> Nonlinear Optimization Example</summary>
-
-</details>
 
 ### LQR Control
 
@@ -180,9 +176,6 @@ An interesting fact about the double pendulum system is that it acts like a sing
 - Selection of appropriate state and control weight matrices (Q and R)
 - Solving the Riccati equation to obtain the optimal feedback gain matrix.
 
-<details>
-<summary>LQR Implementation Example</summary>
-</details>
 
 ## Dependencies
 
@@ -193,7 +186,4 @@ An interesting fact about the double pendulum system is that it acts like a sing
 - Matplotlib
 - Control
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
